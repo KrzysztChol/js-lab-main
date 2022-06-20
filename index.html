@@ -1,0 +1,228 @@
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Refleksomierz</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, serif;
+        }
+
+        h1 {
+            color: #0B3954;
+        }
+
+        #clicker_div {
+            width: 100%;
+            height: 500px;
+        }
+
+        .green {
+            background-color: green;
+        }
+
+        .red {
+            background-color: red;
+        }
+    </style>
+</head>
+<body onload="body_onload()">
+<div id="app">
+    <h1 id="main-header">Refleksomierz</h1>
+    <!-- <p>To będzie gra. A oto co muszę zrobić:</p>
+    <ol>
+        <li class="boring">Nauczyć się HTML</li>
+        <li class="boring">Nauczyć się CSS</li>
+        <li>Nauczyć się JS</li>
+        <li id="super-important">Zaimplementować</li>
+    </ol> -->
+
+    <!-- <button type="button" onclick="removeBoringStuff()">Usuń nudne rzeczy</button>
+
+    <input type="text" id="myTextField">
+    <input type="checkbox" id="myCheckbox">
+    <button type="button" onclick="readValues()">Odczytaj wartości</button> -->
+
+    <div id="description">
+        Kliknij start, następnie poczekaj na zmianę koloru czerwonego w zielony. Kliknij na zielony obszar najszybciej jak tylko potrafisz!
+    </div>
+
+    <br>
+    
+    <button type="button" onclick="button_start()">Start</button>
+    <button type="button" onclick="button_stop()">Stop</button>
+    <label>Ilość prób: <input type="text" id="clicker_max_attempts_text_field" onchange="clicker_max_attempts_text_field_updated()"></label>
+    
+
+    <div id="clicker_div" class="red" onclick="clicker_div_clicked()"></div>
+
+    <div id="statistics">
+        Statystyki:<br>
+        Najkrótszy czas reakcji: <div id="statistics-shortest"></div>
+        Najdłuższy czas reakcji: <div id="statistics-longest"></div>
+        Średni czas reakcji: <div id="statistics-average"></div>
+    </div>
+
+</div>
+<script>
+    // const header = document.getElementById('main-header');
+    // // alert(header.innerText);
+    // // szukanie po selektorach (tak jak w CSS)
+    // const nudy = document.querySelectorAll("#app .boring");
+    // nudy.forEach(element => {
+    //     // alert(`Nuda: ${element.innerText}`);
+    //     // element.classList.remove('boring');
+    // });
+
+    // let div = document.createElement('div');
+    // div.classList.add('green');
+    // div.innerText = 'Zielony tekst (jeśli dodasz CSS)';
+    // document.getElementById('app').append(div); // jest też prepend
+
+    // let listItem = document.createElement('li');
+    // listItem.innerText = 'Zagrać';
+    // // dodaję na koniec listy
+    // document.querySelector("#app ol li:last-child").after(listItem); // jest też before
+
+    // function removeBoringStuff() {
+    //     document.querySelectorAll("#app .boring").forEach((e) => e.remove());
+    // }
+
+    // function readValues() {
+    //     if (document.getElementById("myCheckbox").checked) {
+    //         let values = document.getElementById("myTextField").value;
+
+    //         alert(values);
+    //     }
+    // }
+
+    const clicker_div_max_time = 5;
+
+    let clicker_div_time_started_ms;
+    let clicker_div_attempt;
+    let clicker_div_max_attempts = 5;
+    let clicker_div_attempt_reflex_table;
+
+    let clicker_div_timeout_id;
+
+    let game_in_progress;
+    let timer_in_progress;
+
+    function body_onload() {
+        clicker_div_attempt = 0;
+        clicker_div_attempt_reflex_table = [0,0,0,0,0];
+
+        document.getElementById('statistics').style.visibility='hidden';
+        game_in_progress = false;
+        timer_in_progress = false;
+    }
+
+    function button_start() {
+        clicker_div_attempt = 0;
+        clicker_div_attempt_reflex_table = [0,0,0,0,0];
+
+        document.getElementById('statistics').style.visibility='hidden';
+
+        const randomNumberBetwen0And1 = Math.random();
+        let time_to_stop = randomNumberBetwen0And1 * clicker_div_max_time; // seconds
+
+        time_to_stop *= 1000; // miliseconds
+
+        clicker_div_timeout_id = setTimeout(change_bg_color, time_to_stop);
+
+        game_in_progress = true;
+        timer_in_progress = true;
+    }
+    
+    function button_stop() {
+        clearTimeout(clicker_div_timeout_id);
+        clicker_div_attempt = 0;
+        clicker_div_attempt_reflex_table = [0,0,0,0,0];
+        document.getElementById('statistics').style.visibility='hidden';
+        game_in_progress = false;
+        timer_in_progress = false;
+    }
+
+    function change_bg_color() {
+        document.getElementById('clicker_div').classList.remove('red');
+        document.getElementById('clicker_div').classList.add('green');
+        const now = new Date();
+        clicker_div_time_started_ms = now.getTime();
+        timer_in_progress = false;
+    }
+
+    function clicker_div_clicked() {
+        if (game_in_progress === false || timer_in_progress === true) {
+            return;
+        }
+        
+        document.getElementById('statistics').style.visibility='visible';
+
+        document.getElementById('clicker_div').classList.remove('green');
+        document.getElementById('clicker_div').classList.add('red');
+        const now = new Date();
+        let clicker_div_time_stopped_ms = now.getTime();
+        let clicker_div_reflex_ms = clicker_div_time_stopped_ms - clicker_div_time_started_ms;
+        clicker_div_reflex_ms /= 1000;
+        clicker_div_attempt_reflex_table[clicker_div_attempt] = clicker_div_reflex_ms;
+        //alert("Twój refleks to:" + clicker_div_reflex_ms + "s");
+
+        clicker_div_attempt += 1;
+        if (clicker_div_attempt >= clicker_div_max_attempts) {
+
+            update_result_table();
+
+            alert("Koniec gry");
+
+            clicker_div_attempt = 0;
+            clicker_div_attempt_reflex_table = [0,0,0,0,0];
+            game_in_progress = false;
+        } else {
+
+            const randomNumberBetwen0And1 = Math.random();
+            let time_to_stop = randomNumberBetwen0And1 * clicker_div_max_time; // seconds
+
+            time_to_stop *= 1000; // miliseconds
+
+            clicker_div_timeout_id = setTimeout(change_bg_color, time_to_stop);
+            timer_in_progress = true;
+
+            update_result_table();
+        }
+    }
+
+    function check_average_relfex_time(attempts) {
+            let clicker_div_reflex_ms_average = 0;
+            for (var i = 0; i < attempts; ++i) {
+                clicker_div_reflex_ms_average += clicker_div_attempt_reflex_table[i];
+            }
+            clicker_div_reflex_ms_average /= attempts;
+            return clicker_div_reflex_ms_average;
+    }
+
+    function update_result_table() {
+        let clicker_div_reflex_ms_average = check_average_relfex_time(clicker_div_attempt)
+        let shortest_reflex = clicker_div_attempt_reflex_table[0];
+        let longest_reflex = clicker_div_attempt_reflex_table[0];
+        for (var i = 0; i < clicker_div_attempt; ++i) {
+            if (shortest_reflex > clicker_div_attempt_reflex_table[i]) {
+                shortest_reflex = clicker_div_attempt_reflex_table[i];
+            }
+            if (longest_reflex < clicker_div_attempt_reflex_table[i]) {
+                longest_reflex = clicker_div_attempt_reflex_table[i];
+            }
+        }
+        document.getElementById('statistics-shortest').innerHTML = shortest_reflex + "s";
+        document.getElementById('statistics-longest').innerHTML = longest_reflex + "s";
+        document.getElementById('statistics-average').innerHTML = clicker_div_reflex_ms_average + "s";
+
+    }
+
+    function clicker_max_attempts_text_field_updated() {
+        let value = document.getElementById("clicker_max_attempts_text_field").value;
+        clicker_div_max_attempts = value;
+    }
+</script>
+</body>
+</html>
